@@ -20,34 +20,48 @@ const registerUser = asyncHandler(async (req, res) => {
   //   userName: "Raja Zulkaif Janjua"
   // });
   const { username, fullName, email, password } = req.body;
-
+  //  console.log("res.boday",req.body); 
+   
   if (
     [fullName, username, email, password].some((field) => field?.trim() === "")
   ) {
     throw new ApiError(400, "All fields are required");
   }
 
-  const exitedUser = User.findOne({
+  const exitedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
 
   if (exitedUser) {
     throw new ApiError(409, "User with email and password is already exit");
   }
+// console.log("req.files?",req.files);
+// console.log("req.files?.avatar[0]?",req.files?.avatar[0]);
+// console.log("req.files?.avatar[0]?.path",req.files.avatar[0]?.path);
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+  let coverImageLocalPath;
+
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+    coverImageLocalPath = req.files.coverImage[0].path
+  }
+
+  // console.log(avatarLocalPath);
+  // console.log(coverImageLocalPath);
 
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar image is required");
+    throw new ApiError(400, "Avatar image is required for local");
   }
 
   const avatar = await uploadCloudinary(avatarLocalPath);
   const coverImage = await uploadCloudinary(coverImageLocalPath);
 
   if (!avatar) {
-    throw new ApiError(400, "Avatar image is reuired");
+    throw new ApiError(400, "Avatar image is reuired for cloud");
   }
+  
 
   const user = await User.create({
     username: username.toLowerCase(),
